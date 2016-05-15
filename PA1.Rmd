@@ -7,6 +7,7 @@ output:
 ---
 ```{r loading libraries, echo=FALSE, results='hide'}
 library(ggplot2)
+library(lattice)
 ```
 ## Loading and preprocessing the data
 ```{r}
@@ -41,9 +42,29 @@ The 5-min interval which contains the maximum number of steps on average is `r i
 
 ## Imputing missing values
 ```{r}
-non_nas<-sum(!complete.cases(data))
+num_nas<-sum(is.na(data))
 imputed<-transform(data, steps = ifelse(is.na(data$steps), sbi$steps[match(data$interval, sbi$interval)], data$steps))
 ```
+The number of  missing values in the data set is `r num_nas`. This dataset was imputed by changing the NAs with the average for each time interval.
+
+```{r}
+sbdi<-aggregate(steps~date,imputed,sum)
+qplot(sbdi$steps, geom="histogram", xlab="Number of steps", ylab="Frequency")
+imean<-mean(sbdi$steps)
+imedian<-median(sbdi$steps)
+diff_mean<-abs(smean-imean)
+diff_median<-abs(smedian-imedian)
+```
+The mean of the imputed data is `r imean` and the median `r imedian`.
+
+The difference of the mean between the original date and the imputed data is `r diff_mean` and the median `r diff_median`.
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+weekdays <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
+imputed$weekdays = as.factor(ifelse(is.element(weekdays(as.Date(imputed$date)),weekdays),"weekday", "weekend"))
+sbii<- aggregate(steps ~ interval + weekdays, imputed, mean)
+xyplot(sbii$steps ~ sbii$interval|sbii$weekdays,xlab="Interval", ylab="Steps",layout=c(1,2), type="l")
+```
